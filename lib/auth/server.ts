@@ -3,9 +3,13 @@ import { auth } from "@/lib/auth";
 
 export async function getServerSession() {
   // Better Auth uses request headers for cookies.
-  return auth.api.getSession({
-    headers: await headers(),
+  const headersList = await headers();
+  console.log("Headers for session:", Object.fromEntries(headersList.entries()));
+  const session = await auth.api.getSession({
+    headers: headersList,
   });
+  console.log("Session result:", session);
+  return session;
 }
 
 export async function requireServerSession() {

@@ -12,9 +12,18 @@ import { prisma } from "@/lib/db/prisma";
 export const auth = betterAuth({
   baseURL: "http://localhost:3000",
   trustedOrigins: ["http://localhost:3000"],
+  session: {
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24, // 1 day
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60, // 5 minutes
+    },
+  },
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  socialProviders: {},
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
