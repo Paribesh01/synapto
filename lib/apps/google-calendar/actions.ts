@@ -1,5 +1,5 @@
-import { google } from "googleapis";
-import { openai } from "@ai-sdk/openai";
+import { google as googleApis } from "googleapis";
+import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { getGoogleOAuthClientForUser } from "@/lib/apps/google-calendar/oauth";
@@ -25,15 +25,15 @@ export async function createEventFromText({
   input: string;
 }) {
   const parsed = await generateObject({
-    model: openai("gpt-4o-mini"),
+    model: google("gemini-2.5-flash"),
     schema: CreateEventSchema,
-    prompt: `Extract calendar event details from the user request. If duration is not specified, use 30 minutes.
+    prompt: `Extract calendar event details from user request. If duration is not specified, use 30 minutes.
 
 User request: ${input}`,
   });
 
   const oauth2 = await getGoogleOAuthClientForUser(userId);
-  const calendar = google.calendar({ version: "v3", auth: oauth2 });
+  const calendar = googleApis.calendar({ version: "v3", auth: oauth2 });
 
   const event = await calendar.events.insert({
     calendarId: "primary",
@@ -62,7 +62,7 @@ export async function listUpcomingEventsFromText({
   });
 
   const range = await generateObject({
-    model: openai("gpt-4o-mini"),
+    model: google("gemini-2.5-flash"),
     schema: RangeSchema,
     prompt: `Given the user request, choose a reasonable time range for listing upcoming events.
 If the user doesn't specify a range, list next 7 days.
@@ -71,7 +71,7 @@ User request: ${input}`,
   });
 
   const oauth2 = await getGoogleOAuthClientForUser(userId);
-  const calendar = google.calendar({ version: "v3", auth: oauth2 });
+  const calendar = googleApis.calendar({ version: "v3", auth: oauth2 });
 
   const res = await calendar.events.list({
     calendarId: "primary",
