@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useChat, type Message } from "ai/react";
+import type { FormEvent } from "react";
+import { useChat } from "@ai-sdk/react";
+import type { UIMessage } from "@ai-sdk/react";
 import { useChatStore } from "@/components/chat/use-chat-store";
 import { MessageList } from "@/components/chat/message-list";
 import { ChatComposer } from "@/components/chat/chat-composer";
@@ -15,7 +17,7 @@ type DbMessage = {
 
 function ChatInner() {
   const { activeChatId } = useChatStore();
-  const [initialMessages, setInitialMessages] = useState<Message[]>([]);
+  const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
   const [loading, setLoading] = useState(false);
 
   const chatId = activeChatId ?? "";
@@ -38,7 +40,7 @@ function ChatInner() {
         data.messages.map((m) => ({
           id: m.id,
           role: m.role === "assistant" ? "assistant" : "user",
-          content: m.content,
+          parts: [{ type: "text", text: m.content }],
         })),
       );
       setLoading(false);
@@ -51,26 +53,31 @@ function ChatInner() {
 
   const {
     messages,
-    input,
-    setInput,
-    handleSubmit,
-    isLoading: isStreaming,
+    sendMessage,
     setMessages,
-  } = useChat({
-    api: "/api/chat",
-    body: useMemo(() => ({ chatId }), [chatId]),
-    initialMessages,
-    onResponse: () => {
-      // keep chat sidebar fresh (it sorts by updatedAt)
-      void fetch("/api/chats", { cache: "no-store" });
-    },
-  });
+  } = useChat();
+  const isStreaming = false; // Temporary fix
+
+  const [input, setInput] = useState("");
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (input.trim() && !isStreaming) {
+      setInput("");
+      await sendMessage({
+        parts: [{ type: "text", text: input }],
+      }, {
+        body: {
+          chatId,
+        },
+      });
+    }
+  };
 
   // When switching chats, replace client messages with loaded history.
   useEffect(() => {
     setMessages(initialMessages);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatId, initialMessages]);
+  }, [chatId, initialMessages, setMessages]);
 
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col">

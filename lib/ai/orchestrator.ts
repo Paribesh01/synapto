@@ -1,5 +1,5 @@
-import { openai } from "@ai-sdk/openai";
-import { generateObject, streamText, type CoreMessage } from "ai";
+import { google } from "@ai-sdk/google";
+import { generateObject, streamText } from "ai";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { getConnectorById } from "@/lib/apps/registry";
@@ -24,7 +24,7 @@ export async function orchestrate({
   latestUserInput,
 }: {
   userId: string;
-  messages: CoreMessage[];
+  messages: any[];
   latestUserInput: string;
 }) {
   const connected = await prisma.connectedApp.findMany({
@@ -32,7 +32,7 @@ export async function orchestrate({
   });
 
   const apps = connected
-    .map((a) => {
+    .map((a: any) => {
       const connector = getConnectorById(a.appId);
       if (!connector) return null;
       return {
@@ -43,11 +43,16 @@ export async function orchestrate({
     })
     .filter(Boolean) as Array<{ id: string; name: string; capabilities: string[] }>;
 
-  const intent = apps.length
-    ? await generateObject({
-        model: openai("gpt-4o-mini"),
-        schema: IntentSchema,
-        prompt: `You are an intent classifier. The user has connected these apps and capabilities:
+  // Try with gemini-2.5-flash first, fallback to gemini-1.5-flash if quota exceeded
+  let intent;
+  let modelUsed = "gemini-2.5-flash";
+  
+  try {
+    intent = apps.length
+      ? await generateObject({
+          model: google("gemini-2.5-flash"),
+          schema: IntentSchema,
+          prompt: `You are an intent classifier. The user has connected these apps and capabilities:
 ${apps
   .map((a) => `- ${a.id} (${a.name}): ${a.capabilities.join(", ")}`)
   .join("\n")}
@@ -56,8 +61,27 @@ Given the user message, choose the best matching appId + capability, or null if 
 Be conservative; only return a non-null appId when very likely.
 
 User message: ${latestUserInput}`,
-      })
-    : { object: { appId: null, capability: null, confidence: 0 } };
+        })
+      : { object: { appId: null, capability: null, confidence: 0 } };
+  } catch (error) {
+    console.warn("Failed with gemini-2.5-flash, trying gemini-1.5-flash:", error);
+    modelUsed = "gemini-1.5-flash";
+    intent = apps.length
+      ? await generateObject({
+          model: google("gemini-1.5-flash"),
+          schema: IntentSchema,
+          prompt: `You are an intent classifier. The user has connected these apps and capabilities:
+${apps
+  .map((a) => `- ${a.id} (${a.name}): ${a.capabilities.join(", ")}`)
+  .join("\n")}
+
+Given the user message, choose the best matching appId + capability, or null if none apply.
+Be conservative; only return a non-null appId when very likely.
+
+User message: ${latestUserInput}`,
+        })
+      : { object: { appId: null, capability: null, confidence: 0 } };
+  }
 
   let connectorResult: string | null = null;
 
@@ -70,11 +94,29 @@ User message: ${latestUserInput}`,
 
   const system = buildSystemPrompt(apps, connectorResult);
 
-  return streamText({
-    model: openai("gpt-4o-mini"),
-    system,
-    messages,
-  });
+  // Try streaming with the same model logic
+  try {
+    return streamText({
+      model: google(modelUsed),
+      system,
+      messages,
+      onError: ({ error }) => {
+        console.error(`Streaming error with ${modelUsed}:`, error);
+        // The error will be handled by the AI SDK and sent to the client
+      },
+    });
+  } catch (error) {
+    console.warn(`Failed with ${modelUsed}, trying fallback model:`, error);
+    const fallbackModel = modelUsed === "gemini-2.5-flash" ? "gemini-1.5-flash" : "gemini-2.5-flash";
+    return streamText({
+      model: google(fallbackModel),
+      system,
+      messages,
+      onError: ({ error }) => {
+        console.error(`Streaming error with fallback ${fallbackModel}:`, error);
+      },
+    });
+  }
 }
 
 function buildSystemPrompt(

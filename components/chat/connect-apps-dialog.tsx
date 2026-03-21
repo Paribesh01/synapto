@@ -22,20 +22,48 @@ export function ConnectAppsDialog({
   const [apps, setApps] = useState<AvailableApp[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  // Hardcoded available apps with status fetched from DB
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      if (!open) return;
-      const res = await fetch("/api/apps/available", { cache: "no-store" });
-      if (!res.ok) return;
-      const data = (await res.json()) as { apps: AvailableApp[] };
-      if (!cancelled) setApps(data.apps);
+    async function loadAppsWithStatus() {
+      // Hardcoded app data
+      const hardcodedApps = [
+        {
+          id: "google-calendar",
+          name: "Google Calendar",
+          capabilities: ["create_event", "list_events", "update_event", "delete_event"],
+          status: "disconnected" as const, // default status
+        },
+      ];
+
+      // Fetch actual status from database
+      try {
+        const res = await fetch("/api/apps/available", { cache: "no-store" });
+        if (res.ok) {
+          const data = (await res.json()) as { apps: AvailableApp[] };
+          // Merge hardcoded data with actual status from DB
+          const appsWithStatus = hardcodedApps.map((app) => {
+            const dbApp = data.apps.find((a) => a.id === app.id);
+            return {
+              ...app,
+              status: dbApp?.status ?? "disconnected",
+            };
+          });
+          setApps(appsWithStatus);
+        } else if (res.status === 401) {
+          // User not authenticated, show hardcoded apps with disconnected status
+          console.log("User not authenticated, showing hardcoded apps");
+          setApps(hardcodedApps);
+        } else {
+          setApps(hardcodedApps);
+        }
+      } catch (error) {
+        console.error("Failed to fetch app status:", error);
+        setApps(hardcodedApps);
+      }
     }
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
+
+    loadAppsWithStatus();
+  }, []);
 
   async function connect(appId: string) {
     setBusyId(appId);

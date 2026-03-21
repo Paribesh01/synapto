@@ -12,14 +12,16 @@
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.62",
     "@ai-sdk/openai": "^2.0.0",
+    "@ai-sdk/react": "^3.0.118",
     "@prisma/adapter-pg": "^7.4.0",
     "@prisma/client": "^7.4.0",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-scroll-area": "^1.2.3",
     "@radix-ui/react-separator": "^1.1.2",
     "@radix-ui/react-slot": "^1.1.2",
-    "ai": "^4.0.0",
+    "ai": "^6.0.116",
     "better-auth": "^1.4.18",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

@@ -35,7 +35,7 @@ export async function registerWithEmailPassword(formData: FormData) {
 
   await auth.api.signUpEmail({
     headers: await headers(),
-    body: { email, password, name: name || undefined },
+    body: { email, password, name: name ?? "" },
   });
 
   redirect("/chat");

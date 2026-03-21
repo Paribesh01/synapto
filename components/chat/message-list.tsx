@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { Message } from "ai/react";
+import type { UIMessage } from "@ai-sdk/react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +10,7 @@ export function MessageList({
   emptyState,
   className,
 }: {
-  messages: Message[];
+  messages: UIMessage[];
   emptyState: string;
   className?: string;
 }) {
@@ -29,16 +29,19 @@ export function MessageList({
           </div>
         ) : null}
 
-        {messages.map((m) => (
-          <div key={m.id} className="space-y-2">
-            <div className="text-xs font-medium text-muted-foreground">
-              {m.role === "user" ? "You" : "Assistant"}
+        {messages.map((m) => {
+          const content = m.parts?.find(part => part.type === "text")?.text || "";
+          return (
+            <div key={m.id} className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground">
+                {m.role === "user" ? "You" : "Assistant"}
+              </div>
+              <div className="whitespace-pre-wrap rounded-lg border bg-card p-4 text-sm leading-6">
+                {content}
+              </div>
             </div>
-            <div className="whitespace-pre-wrap rounded-lg border bg-card p-4 text-sm leading-6">
-              {m.content}
-            </div>
-          </div>
-        ))}
+          );
+        })}
         <div ref={bottomRef} />
       </div>
     </ScrollArea>

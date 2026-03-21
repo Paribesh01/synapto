@@ -1,17 +1,37 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma";
 import { orchestrate } from "@/lib/ai/orchestrator";
-import { convertToCoreMessages, type Message } from "ai";
 
 export const runtime = "nodejs";
+
+function errorHandler(error: unknown) {
+  if (error == null) {
+    return 'unknown error';
+  }
+
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return JSON.stringify(error);
+}
 
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session) return new Response("Unauthorized", { status: 401 });
 
-  const body = (await req.json()) as { chatId: string; messages: Message[] };
+  const body = (await req.json()) as { chatId: string; messages: any[] };
   const chatId = body.chatId;
   const messages = body.messages ?? [];
+
+  // Ensure messages is an array and not undefined
+  if (!Array.isArray(messages)) {
+    return new Response("Invalid messages format", { status: 400 });
+  }
 
   const chat = await prisma.chat.findFirst({
     where: { id: chatId, userId: session.user.id },
@@ -19,34 +39,44 @@ export async function POST(req: Request) {
   if (!chat) return new Response("Chat not found", { status: 404 });
 
   const last = messages[messages.length - 1];
-  const latestUserInput = typeof last?.content === "string" ? last.content : "";
+  const latestUserInput = last?.parts?.find((part: any) => part.type === "text")?.text ?? "";
 
   if (!latestUserInput) {
     return new Response("Missing user message", { status: 400 });
   }
 
+  // Save user message to database
   await prisma.message.create({
     data: { chatId, role: "user", content: latestUserInput },
   });
 
-  const result = await orchestrate({
-    userId: session.user.id,
-    latestUserInput,
-    messages: convertToCoreMessages(messages),
-  });
+  // The useChat hook sends messages in parts format, convert to content format for orchestrate
+  const coreMessages = messages.map((msg: any) => ({
+    id: msg.id,
+    role: msg.role,
+    content: msg.parts?.find((part: any) => part.type === "text")?.text || "",
+  }));
 
-  return result.toDataStreamResponse({
-    onFinish: async ({ text }) => {
-      if (!text) return;
-      await prisma.message.create({
-        data: { chatId, role: "assistant", content: text },
-      });
-      await prisma.chat.update({
-        where: { id: chatId },
-        data: { updatedAt: new Date() },
-      });
-    },
-  });
+  try {
+    const result = await orchestrate({
+      userId: session.user.id,
+      latestUserInput,
+      messages: coreMessages,
+    });
+
+    // Return the streaming response in format expected by useChat hook
+    return result.toUIMessageStreamResponse();
+  } catch (error) {
+    console.error("Error in chat API:", error);
+    
+    // For non-streaming errors, return a proper error response
+    return new Response(
+      JSON.stringify({ 
+        error: errorHandler(error)
+      }), 
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
 }
 
 
