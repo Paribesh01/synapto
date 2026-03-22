@@ -62,6 +62,14 @@ export async function POST(req: Request) {
       userId: session.user.id,
       latestUserInput,
       messages: coreMessages,
+      onFinish: async ({ text }) => {
+        // Save AI response to database when streaming is complete
+        if (text && text.trim()) {
+          await prisma.message.create({
+            data: { chatId, role: "assistant", content: text.trim() },
+          });
+        }
+      },
     });
 
     // Return the streaming response in format expected by useChat hook

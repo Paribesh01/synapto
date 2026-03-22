@@ -22,10 +22,12 @@ export async function orchestrate({
   userId,
   messages,
   latestUserInput,
+  onFinish,
 }: {
   userId: string;
   messages: any[];
   latestUserInput: string;
+  onFinish?: (options: { text: string }) => void | Promise<void>;
 }) {
   const connected = await prisma.connectedApp.findMany({
     where: { userId, status: "connected" },
@@ -100,6 +102,7 @@ User message: ${latestUserInput}`,
       model: google(modelUsed),
       system,
       messages,
+      onFinish,
       onError: ({ error }) => {
         console.error(`Streaming error with ${modelUsed}:`, error);
         // The error will be handled by the AI SDK and sent to the client
@@ -112,6 +115,7 @@ User message: ${latestUserInput}`,
       model: google(fallbackModel),
       system,
       messages,
+      onFinish,
       onError: ({ error }) => {
         console.error(`Streaming error with fallback ${fallbackModel}:`, error);
       },
