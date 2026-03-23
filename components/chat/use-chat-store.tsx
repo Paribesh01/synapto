@@ -4,7 +4,7 @@ import * as React from "react";
 
 type ChatStore = {
   activeChatId: string | null;
-  setActiveChatId: (id: string) => void;
+  setActiveChatId: (id: string | null) => void;
 };
 
 const ChatStoreContext = React.createContext<ChatStore | null>(null);
@@ -14,7 +14,7 @@ export function ChatStoreProvider({ children }: { children: React.ReactNode }) {
     null,
   );
 
-  const setActiveChatId = React.useCallback((id: string) => {
+  const setActiveChatId = React.useCallback((id: string | null) => {
     setActiveChatIdState(id);
   }, []);
 
