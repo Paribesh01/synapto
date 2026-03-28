@@ -135,20 +135,28 @@ function ChatInner({ chatId: propChatId }: { chatId?: string }) {
       if (!currentChatId) {
         console.log("No chatId, creating new chat...");
         
-        // Save message to localStorage for the new chat
-        const tempMessageId = Date.now().toString();
-        localStorage.setItem('pendingMessage', JSON.stringify({
-          id: tempMessageId,
-          role: 'user',
-          content: input,
-          createdAt: new Date().toISOString()
-        }));
-        
+        // Step 1: Generate title from AI using dedicated endpoint
         try {
+          const titleResponse = await fetch('/api/generate-title', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message: input }),
+          });
+          
+          let chatTitle = input.slice(0, 50); // fallback
+          if (titleResponse.ok) {
+            const titleData = await titleResponse.json();
+            console.log("Generated title:", titleData.title);
+            chatTitle = titleData.title;
+          }
+          
+          // Step 2: Create chat with generated title
           const res = await fetch("/api/chats", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title: input.slice(0, 50) }),
+            body: JSON.stringify({ title: chatTitle }),
           });
           
           console.log("Chat creation response:", res.status);
@@ -163,6 +171,7 @@ function ChatInner({ chatId: propChatId }: { chatId?: string }) {
             // Save pending message to localStorage for the new chat
             if (newChat.chatId) {
               console.log("Entering newChat.chatId block...");
+              const tempMessageId = Date.now().toString();
               localStorage.setItem(`pendingMessage_${newChat.chatId}`, JSON.stringify({
                 id: tempMessageId,
                 role: 'user',
@@ -173,7 +182,7 @@ function ChatInner({ chatId: propChatId }: { chatId?: string }) {
               // Update store
               setActiveChatId(newChat.chatId);
               
-              // Send the message immediately after creating the chat (non-blocking)
+              // Step 3: Send the actual user message to AI
               const sendMessagePromise = (async () => {
                 try {
                   console.log("Sending message to new chat:", newChat.chatId, input);
@@ -219,7 +228,63 @@ function ChatInner({ chatId: propChatId }: { chatId?: string }) {
             console.error("Chat creation error:", errorText);
           }
         } catch (error) {
-          console.error("Error creating chat:", error);
+          console.error("Error in title generation or chat creation:", error);
+          // Fallback: create chat with original message as title
+          const tempMessageId = Date.now().toString();
+          const res = await fetch("/api/chats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: input.slice(0, 50) }),
+          });
+          
+          if (res.ok) {
+            const newChat = await res.json();
+            currentChatId = newChat.chatId;
+            
+            // Save pending message to localStorage for the new chat
+            if (newChat.chatId) {
+              localStorage.setItem(`pendingMessage_${newChat.chatId}`, JSON.stringify({
+                id: tempMessageId,
+                role: 'user',
+                content: input,
+                createdAt: new Date().toISOString()
+              }));
+              
+              setActiveChatId(newChat.chatId);
+              
+              // Send the actual user message to AI
+              const sendMessagePromise = (async () => {
+                try {
+                  const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      chatId: newChat.chatId,
+                      messages: [{
+                        id: tempMessageId,
+                        role: 'user',
+                        parts: [{ type: 'text', text: input }]
+                      }]
+                    })
+                  });
+                  
+                  if (response.ok) {
+                    console.log("Message sent successfully");
+                  } else {
+                    console.error("Failed to send message:", response.status);
+                  }
+                } catch (error) {
+                  console.error("Error sending message:", error);
+                }
+              })();
+              
+              console.log("Redirecting to:", `/chat/${newChat.chatId}`);
+              window.location.href = `/chat/${newChat.chatId}`;
+              return;
+            }
+          }
         }
       } else {
         console.log("Using existing chatId:", currentChatId);
