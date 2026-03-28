@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, PlugZap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -16,6 +17,7 @@ type ChatListItem = {
 };
 
 export function Sidebar() {
+  const router = useRouter();
   const { activeChatId, setActiveChatId } = useChatStore();
   const [appsOpen, setAppsOpen] = useState(false);
   const [chats, setChats] = useState<ChatListItem[]>([]);
@@ -68,12 +70,10 @@ export function Sidebar() {
       <div className="px-4 pb-4">
         <Button
           className="w-full justify-start gap-2"
-          onClick={async () => {
-            const res = await fetch("/api/chats", { method: "POST" });
-            if (!res.ok) return;
-            const { chatId } = (await res.json()) as { chatId: string };
-            setActiveChatId(chatId);
-            await refreshChats();
+          onClick={() => {
+            // Clear active chat and redirect to /chat page
+            setActiveChatId(null);
+            router.push('/chat');
           }}
         >
           <Plus className="h-4 w-4" />
@@ -100,7 +100,10 @@ export function Sidebar() {
             {chats.map((chat) => (
               <button
                 key={chat.id}
-                onClick={() => setActiveChatId(chat.id)}
+                onClick={() => {
+                  setActiveChatId(chat.id);
+                  router.push(`/chat/${chat.id}`);
+                }}
                 className={cn(
                   "w-full rounded-md px-3 py-2 text-left text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                   activeChatId === chat.id &&
