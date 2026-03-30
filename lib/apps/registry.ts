@@ -1,5 +1,6 @@
 import type { AppConnector } from "@/lib/apps/base";
 import { googleCalendarConnector } from "@/lib/apps/google-calendar";
+import { notionConnector } from "@/lib/apps/notion";
 
 /**
  * Central registry.
@@ -9,7 +10,7 @@ import { googleCalendarConnector } from "@/lib/apps/google-calendar";
  * - Register it here
  * - The rest of the system (UI + orchestrator) discovers it automatically
  */
-const connectors: AppConnector[] = [googleCalendarConnector];
+const connectors: AppConnector[] = [googleCalendarConnector, notionConnector];
 
 export function getAllConnectors() {
   return connectors;

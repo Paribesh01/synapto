@@ -31,7 +31,13 @@ export function ConnectAppsDialog({
           id: "google-calendar",
           name: "Google Calendar",
           capabilities: ["create_event", "list_events", "update_event", "delete_event"],
-          status: "disconnected" as const, // default status
+          status: "disconnected" as const,
+        },
+        {
+          id: "notion",
+          name: "Notion",
+          capabilities: ["create_page", "search_pages"],
+          status: "disconnected" as const,
         },
       ];
 
@@ -82,6 +88,7 @@ export function ConnectAppsDialog({
     setBusyId(appId);
     await fetch(`/api/apps/${appId}/disconnect`, { method: "POST" });
     setBusyId(null);
+    // Refresh apps list
     const res = await fetch("/api/apps/available", { cache: "no-store" });
     if (res.ok) {
       const data = (await res.json()) as { apps: AvailableApp[] };

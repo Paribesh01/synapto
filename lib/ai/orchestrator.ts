@@ -45,7 +45,7 @@ export async function orchestrate({
     })
     .filter(Boolean) as Array<{ id: string; name: string; capabilities: string[] }>;
 
-  // Try with gemini-2.5-flash first, fallback to gemini-1.5-flash if quota exceeded
+  // Try with gemini-2.5-flash first, fallback to gemini-2.5-flash if quota exceeded
   let intent;
   let modelUsed = "gemini-2.5-flash";
   
@@ -66,11 +66,11 @@ User message: ${latestUserInput}`,
         })
       : { object: { appId: null, capability: null, confidence: 0 } };
   } catch (error) {
-    console.warn("Failed with gemini-2.5-flash, trying gemini-1.5-flash:", error);
-    modelUsed = "gemini-1.5-flash";
+    console.warn("Failed with gemini-2.5-flash, trying again:", error);
+    modelUsed = "gemini-2.5-flash";
     intent = apps.length
       ? await generateObject({
-          model: google("gemini-1.5-flash"),
+          model: google("gemini-2.5-flash"),
           schema: IntentSchema,
           prompt: `You are an intent classifier. The user has connected these apps and capabilities:
 ${apps
@@ -109,15 +109,15 @@ User message: ${latestUserInput}`,
       },
     });
   } catch (error) {
-    console.warn(`Failed with ${modelUsed}, trying fallback model:`, error);
-    const fallbackModel = modelUsed === "gemini-2.5-flash" ? "gemini-1.5-flash" : "gemini-2.5-flash";
+    console.warn(`Failed with ${modelUsed}, trying again:`, error);
+    const fallbackModel = "gemini-2.5-flash";
     return streamText({
       model: google(fallbackModel),
       system,
       messages,
       onFinish,
       onError: ({ error }) => {
-        console.error(`Streaming error with fallback ${fallbackModel}:`, error);
+        console.error(`Streaming error with ${fallbackModel}:`, error);
       },
     });
   }
