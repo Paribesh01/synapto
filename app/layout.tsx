@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ChatBB",
+  title: "InteliBridge",
   description: "All-in-one chat app with connected apps",
 };
 

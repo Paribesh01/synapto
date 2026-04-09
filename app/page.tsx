@@ -18,7 +18,7 @@ export default async function Home() {
             The all‑in‑one chat app that can actually do things.
           </h1>
           <p className="max-w-2xl text-pretty text-lg text-muted-foreground">
-            ChatBB is a ChatGPT‑style assistant where users can securely connect
+            InteliBridge is a ChatGPT‑style assistant where users can securely connect
             external apps—starting with Google Calendar—and execute actions
             through a clean connector system.
           </p>

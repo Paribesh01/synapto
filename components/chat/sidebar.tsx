@@ -61,7 +61,7 @@ export function Sidebar() {
     <aside className="flex h-full w-[320px] shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground">
       <div className="flex items-center gap-2 p-4">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium">ChatBB</p>
+          <p className="truncate text-sm font-medium">InteliBridge</p>
           <p className="truncate text-xs text-muted-foreground">
             All-in-one chat + connectors
           </p>
