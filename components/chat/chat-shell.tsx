@@ -113,8 +113,10 @@ function ChatInner({ chatId: propChatId }: { chatId?: string }) {
     messages,
     sendMessage,
     setMessages,
+    regenerate,
+    status,
   } = useChat();
-  const isStreaming = false; // Temporary fix
+  const isStreaming = status === "streaming" || status === "submitted";
 
   // Debug: Log when chatId changes
   useEffect(() => {
@@ -318,10 +320,16 @@ function ChatInner({ chatId: propChatId }: { chatId?: string }) {
         <MessageList
           className="flex-1"
           messages={messages}
+          isStreaming={isStreaming}
+          onRegenerate={
+            chatId
+              ? () => regenerate({ body: { chatId, regenerate: true } })
+              : undefined
+          }
           emptyState={
             loading
               ? "Loading messages…"
-              : "Ask something, or try: “Create a meeting tomorrow at 5pm.”"
+              : "Ask something, or try: \u201cCreate a meeting tomorrow at 5pm.\u201d"
           }
         />
       </div>

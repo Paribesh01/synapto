@@ -24,9 +24,10 @@ export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session) return new Response("Unauthorized", { status: 401 });
 
-  const body = (await req.json()) as { chatId: string; messages: any[] };
+  const body = (await req.json()) as { chatId: string; messages: any[]; regenerate?: boolean };
   const chatId = body.chatId;
   const messages = body.messages ?? [];
+  const isRegenerate = body.regenerate === true;
 
   // Ensure messages is an array and not undefined
   if (!Array.isArray(messages)) {
@@ -45,10 +46,21 @@ export async function POST(req: Request) {
     return new Response("Missing user message", { status: 400 });
   }
 
-  // Save user message to database
-  await prisma.message.create({
-    data: { chatId, role: "user", content: latestUserInput },
-  });
+  if (isRegenerate) {
+    // Delete the last assistant message so we don't accumulate duplicates
+    const lastAssistant = await prisma.message.findFirst({
+      where: { chatId, role: "assistant" },
+      orderBy: { createdAt: "desc" },
+    });
+    if (lastAssistant) {
+      await prisma.message.delete({ where: { id: lastAssistant.id } });
+    }
+  } else {
+    // Save user message to database
+    await prisma.message.create({
+      data: { chatId, role: "user", content: latestUserInput },
+    });
+  }
 
   // The useChat hook sends messages in parts format, convert to content format for orchestrate
   const coreMessages = messages.map((msg: any) => ({

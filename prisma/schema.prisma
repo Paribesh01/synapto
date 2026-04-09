@@ -13,7 +13,7 @@ datasource db {
 /// forcing app-level schema changes. Your domain models (Chat, ConnectedApp…)
 /// relate to `User` via `userId`.
 
-model User {
+model User { 
   id            String    @id @default(cuid())
   email         String    @unique
   name          String?
