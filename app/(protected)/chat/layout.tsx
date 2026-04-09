@@ -8,9 +8,7 @@ export default async function ChatLayout({
   children: React.ReactNode;
 }) {
   const session = await getServerSession();
-  console.log("Session in chat layout:", session);
   if (!session) {
-    console.log("No session found, redirecting to login");
     redirect("/login");
   }
 

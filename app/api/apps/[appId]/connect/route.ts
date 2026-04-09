@@ -7,12 +7,12 @@ export const runtime = "nodejs";
 
 export async function POST(
   req: Request,
-  { params }: { params: { appId: string } },
+  { params }: { params: Promise<{ appId: string }> },
 ) {
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session) return new Response("Unauthorized", { status: 401 });
 
-  const appId = params.appId;
+  const { appId } = await params;
   const connector = getConnectorById(appId);
   if (!connector) return new Response("Unknown app", { status: 404 });
 

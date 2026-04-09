@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -101,6 +107,9 @@ export function ConnectAppsDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Connect Apps</DialogTitle>
+          <DialogDescription>
+            Connect or disconnect third-party apps to enable assistant actions.
+          </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="max-h-[60vh] pr-3">

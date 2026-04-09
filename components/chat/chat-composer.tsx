@@ -23,7 +23,7 @@ export function ChatComposer({
       <Textarea
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        placeholder="Message ChatBB…"
+        placeholder="Type your message..."
         className="min-h-[44px] resize-none"
         disabled={disabled}
         onKeyDown={(e) => {

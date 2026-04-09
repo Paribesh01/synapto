@@ -1,5 +1,5 @@
 import { generateObject } from "ai";
-import { google } from "@ai-sdk/google";
+import { getModel } from "@/lib/ai/provider";
 import { z } from "zod";
 import { getNotionClientForUser } from "@/lib/apps/notion/oauth";
 import { Client } from "@notionhq/client";
@@ -21,7 +21,7 @@ export async function createPageFromText({
   input: string;
 }) {
   const parsed = await generateObject({
-    model: google("gemini-2.5-flash"),
+    model: getModel(),
     schema: CreatePageSchema,
     prompt: `Extract page details from user request for creating a Notion page.
 
@@ -134,7 +134,7 @@ export async function searchPagesFromText({
   input: string;
 }) {
   const parsed = await generateObject({
-    model: google("gemini-2.5-flash"),
+    model: getModel(),
     schema: SearchPagesSchema,
     prompt: `Extract search query from user request for searching Notion pages.
 

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.x.ai)",
+      "WebSearch",
+      "WebFetch(domain:ai-sdk.dev)",
+      "Bash(pnpm add:*)"
+    ]
+  }
+}
